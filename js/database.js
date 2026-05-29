@@ -1,7 +1,7 @@
 // IndexedDB 封装 — 词库、进度、日志、设置
 var DB = (function() {
   var DB_NAME = 'VocabApp';
-  var DB_VERSION = 1;
+  var DB_VERSION = 2;
   var db = null;
 
   function open() {
@@ -25,6 +25,10 @@ var DB = (function() {
         }
         if (!d.objectStoreNames.contains('settings')) {
           d.createObjectStore('settings', { keyPath: 'key' });
+        }
+        if (!d.objectStoreNames.contains('customWords')) {
+          var cw = d.createObjectStore('customWords', { keyPath: 'id', autoIncrement: true });
+          cw.createIndex('word', 'word', { unique: false });
         }
       };
       req.onsuccess = function(e) { db = e.target.result; resolve(db); };
@@ -256,6 +260,56 @@ var DB = (function() {
     });
   }
 
+  // ===== 自定义词库操作 =====
+  function addCustomWord(w) {
+    return new Promise(function(resolve) {
+      var store = getStore('customWords', 'readwrite');
+      w.createdAt = Date.now();
+      w.frequency = 'custom';
+      var req = store.add(w);
+      req.onsuccess = function() { resolve(req.result); };
+    });
+  }
+
+  function addCustomWords(words) {
+    return new Promise(function(resolve) {
+      var store = getStore('customWords', 'readwrite');
+      var count = 0;
+      words.forEach(function(w) {
+        w.createdAt = Date.now();
+        w.frequency = 'custom';
+        store.add(w).onsuccess = function() {
+          count++;
+          if (count >= words.length) resolve(count);
+        };
+      });
+      if (words.length === 0) resolve(0);
+    });
+  }
+
+  function getCustomWords() {
+    return new Promise(function(resolve) {
+      var results = [];
+      getStore('customWords').openCursor().onsuccess = function(e) {
+        var cursor = e.target.result;
+        if (cursor) { results.push(cursor.value); cursor.continue(); }
+        else { resolve(results); }
+      };
+    });
+  }
+
+  function deleteCustomWord(id) {
+    return new Promise(function(resolve) {
+      getStore('customWords', 'readwrite').delete(id).onsuccess = function() { resolve(); };
+    });
+  }
+
+  function clearCustomWords() {
+    return new Promise(function(resolve) {
+      getStore('customWords', 'readwrite').clear().onsuccess = function() { resolve(); };
+    });
+  }
+
   // ===== 初始化 =====
   function init() {
     return open().then(function() {
@@ -301,6 +355,11 @@ var DB = (function() {
     getRecentLogs: getRecentLogs,
     getSetting: getSetting,
     saveSetting: saveSetting,
-    getAllSettings: getAllSettings
+    getAllSettings: getAllSettings,
+    addCustomWord: addCustomWord,
+    addCustomWords: addCustomWords,
+    getCustomWords: getCustomWords,
+    deleteCustomWord: deleteCustomWord,
+    clearCustomWords: clearCustomWords
   };
 })();

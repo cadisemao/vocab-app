@@ -336,6 +336,10 @@ var UI = (function() {
               '<span class="setting-label">📕 生词本（薄弱词专项）</span>' +
               '<span class="setting-value">→</span>' +
             '</div>' +
+            '<div class="setting-item" id="settingCustomBank">' +
+              '<span class="setting-label">📝 自建词库</span>' +
+              '<span class="setting-value">→</span>' +
+            '</div>' +
           '</div>' +
           '<div class="settings-group">' +
             '<h3>数据管理</h3>' +
@@ -399,6 +403,12 @@ var UI = (function() {
         });
       });
 
+      // Custom word bank
+      document.getElementById('settingCustomBank').addEventListener('click', function() {
+        renderCustomBank(document.getElementById('mainContent'));
+        document.getElementById('headerTitle').textContent = '自建词库';
+      });
+
       // Reset
       document.getElementById('btnReset').addEventListener('click', function() {
         if (confirm('确定要重置所有学习进度吗？此操作不可恢复！')) {
@@ -413,8 +423,101 @@ var UI = (function() {
     });
   }
 
+  // ===== 自建词库 =====
+  function renderCustomBank(container) {
+    DB.getCustomWords().then(function(words) {
+      var listHtml = '';
+      if (words.length === 0) {
+        listHtml = '<div style="text-align:center;padding:30px;color:var(--text-muted)">还没有自定义单词，点击下方按钮添加</div>';
+      } else {
+        words.forEach(function(w, i) {
+          listHtml += '<div class="word-list-item" style="background:var(--bg-card);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">' +
+            '<div><span style="font-weight:600;font-size:15px">' + w.word + '</span> <span style="color:var(--text-secondary);font-size:12px">' + (w.meaning||'') + '</span></div>' +
+            '<button style="background:var(--accent-red-bg);border:none;color:var(--accent-red);padding:4px 10px;border-radius:12px;font-size:11px;cursor:pointer" onclick="if(confirm(\'删除 '+w.word+'？\')){DB.deleteCustomWord('+w.id+').then(function(){UI.renderCustomBankUI();})}">✕</button>' +
+            '</div>';
+        });
+      }
+
+      container.innerHTML = '<div class="page active">' +
+        '<div style="display:flex;gap:8px;margin-bottom:16px">' +
+          '<button class="study-nav-btn active" id="btnCWView">浏览 ('+words.length+')</button>' +
+          '<button class="study-nav-btn" id="btnCWAdd">单个添加</button>' +
+          '<button class="study-nav-btn" id="btnCWBatch">批量导入</button>' +
+        '</div>' +
+        '<div id="cwContent">' + listHtml + '</div>' +
+        '<button class="btn-start" style="background:var(--accent-green);margin-top:16px" onclick="UI.showPage(\'home\')">返回首页</button>' +
+      '</div>';
+
+      document.getElementById('btnCWAdd').addEventListener('click', function() {
+        var c = document.getElementById('cwContent');
+        c.innerHTML = '<div style="background:var(--bg-card);border-radius:var(--radius);padding:16px">' +
+          '<h3 style="margin-bottom:12px">添加单词</h3>' +
+          '<input id="cwWord" placeholder="单词" style="width:100%;padding:10px;background:var(--bg-primary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm);margin-bottom:8px;font-size:16px">' +
+          '<input id="cwPhonetic" placeholder="音标（选填）" style="width:100%;padding:10px;background:var(--bg-primary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm);margin-bottom:8px;font-size:14px">' +
+          '<input id="cwPos" placeholder="词性（选填）" style="width:100%;padding:10px;background:var(--bg-primary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm);margin-bottom:8px;font-size:14px">' +
+          '<input id="cwMeaning" placeholder="释义" style="width:100%;padding:10px;background:var(--bg-primary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm);margin-bottom:8px;font-size:14px">' +
+          '<textarea id="cwCollocations" placeholder="搭配/考点（选填）" rows="2" style="width:100%;padding:10px;background:var(--bg-primary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm);margin-bottom:8px;font-size:14px;resize:vertical"></textarea>' +
+          '<button class="btn-start" id="btnCWSave">保存</button></div>';
+        document.getElementById('btnCWSave').addEventListener('click', function() {
+          var w = {
+            word: document.getElementById('cwWord').value.trim(),
+            phonetic: document.getElementById('cwPhonetic').value.trim(),
+            pos: document.getElementById('cwPos').value.trim(),
+            meaning: document.getElementById('cwMeaning').value.trim(),
+            collocations: document.getElementById('cwCollocations').value.trim()
+          };
+          if (!w.word || !w.meaning) { alert('单词和释义为必填'); return; }
+          DB.addCustomWord(w).then(function() {
+            renderCustomBank(container);
+            document.getElementById('headerTitle').textContent = '自建词库';
+          });
+        });
+      });
+
+      document.getElementById('btnCWBatch').addEventListener('click', function() {
+        var c = document.getElementById('cwContent');
+        c.innerHTML = '<div style="background:var(--bg-card);border-radius:var(--radius);padding:16px">' +
+          '<h3 style="margin-bottom:8px">批量导入单词</h3>' +
+          '<p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">每行一个单词，格式: <b>单词 — 释义</b> 或 <b>单词 释义</b></p>' +
+          '<p style="font-size:11px;color:var(--accent-orange);margin-bottom:8px">示例:<br>abandon — 放弃；抛弃<br>achieve — 实现；达到<br>brilliant — 杰出的；明亮的</p>' +
+          '<textarea id="cwBatchText" placeholder="粘贴单词列表..." rows="10" style="width:100%;padding:10px;background:var(--bg-primary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13px;resize:vertical;font-family:monospace"></textarea>' +
+          '<button class="btn-start" id="btnCWImport">解析并导入</button>' +
+          '<div id="cwBatchResult" style="margin-top:8px;font-size:13px"></div></div>';
+        document.getElementById('btnCWImport').addEventListener('click', function() {
+          var text = document.getElementById('cwBatchText').value.trim();
+          if (!text) return;
+          var lines = text.split('\n');
+          var words = [];
+          lines.forEach(function(line) {
+            line = line.trim();
+            if (!line) return;
+            var sep = ' — ';
+            var idx = line.indexOf(sep);
+            if (idx === -1) { sep = '—'; idx = line.indexOf(sep); }
+            if (idx === -1) { sep = ' - '; idx = line.indexOf(sep); }
+            if (idx === -1) { sep = '-'; idx = line.indexOf(sep); }
+            if (idx === -1) { sep = '  '; idx = line.indexOf('  '); }
+            if (idx === -1) { sep = '\t'; idx = line.indexOf('\t'); }
+            if (idx > 0) {
+              var word = line.substring(0, idx).trim();
+              var meaning = line.substring(idx + sep.length).trim();
+              if (word && meaning) words.push({ word: word, meaning: meaning });
+            }
+          });
+          if (words.length === 0) { document.getElementById('cwBatchResult').innerHTML = '<span style="color:var(--accent-red)">未识别到有效单词，请检查格式</span>'; return; }
+          DB.addCustomWords(words).then(function(count) {
+            document.getElementById('cwBatchResult').innerHTML = '<span style="color:var(--accent-green)">成功导入 ' + count + ' 个单词！</span>';
+            document.getElementById('cwBatchText').value = '';
+            setTimeout(function() { renderCustomBank(container); }, 1000);
+          });
+        });
+      });
+    });
+  }
+
   return {
     showPage: showPage,
-    startStudySession: startStudySession
+    startStudySession: startStudySession,
+    renderCustomBankUI: function() { renderCustomBank(document.getElementById('mainContent')); }
   };
 })();

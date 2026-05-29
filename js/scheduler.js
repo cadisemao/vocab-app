@@ -76,7 +76,8 @@ var Scheduler = (function() {
           return DB.getWordsByFrequency('high').then(function(highWords) {
             return DB.getWordsByFrequency('medium').then(function(medWords) {
               return DB.getWordsByFrequency('low').then(function(lowWords) {
-                var candidates = highWords.concat(medWords).concat(lowWords);
+                return DB.getCustomWords().then(function(customWords) {
+                var candidates = highWords.concat(medWords).concat(lowWords).concat(customWords);
                 var newWords = [];
                 for (var i = 0; i < candidates.length && newWords.length < newQuota; i++) {
                   if (!learnedIds[candidates[i].id] && newWordIdsDone.indexOf(candidates[i].id) === -1) {
