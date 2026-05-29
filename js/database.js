@@ -261,8 +261,21 @@ var DB = (function() {
     return open().then(function() {
       return getWordCount();
     }).then(function(count) {
-      if (count === 0 && typeof WORDS !== 'undefined') {
+      if (typeof WORDS === 'undefined') return count;
+      if (count === 0) {
         return importWords(WORDS);
+      }
+      // Import only new words that don't exist in DB yet
+      if (count < WORDS.length) {
+        return getAllWords().then(function(existing) {
+          var existingIds = {};
+          existing.forEach(function(w) { existingIds[w.id] = true; });
+          var newWords = WORDS.filter(function(w) { return !existingIds[w.id]; });
+          if (newWords.length > 0) {
+            return importWords(newWords);
+          }
+          return count;
+        });
       }
       return count;
     });
