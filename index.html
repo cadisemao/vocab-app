@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>中考词汇·艾宾浩斯背词</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 顶部标题栏 -->
+  <header id="header">
+    <h1 id="headerTitle">中考词汇</h1>
+    <span id="headerSub"></span>
+  </header>
+
+  <!-- 页面容器 -->
+  <main id="mainContent"></main>
+
+  <!-- 底部导航栏 -->
+  <nav id="bottomNav">
+    <button class="nav-btn active" data-page="home">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">首页</span>
+    </button>
+    <button class="nav-btn" data-page="study">
+      <span class="nav-icon">📝</span>
+      <span class="nav-label">背诵</span>
+    </button>
+    <button class="nav-btn" data-page="stats">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">统计</span>
+    </button>
+    <button class="nav-btn" data-page="settings">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">设置</span>
+    </button>
+  </nav>
+
+  <!-- 模态层 -->
+  <div id="modalOverlay" class="hidden"></div>
+
+  <script src="js/words.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/ebbinghaus.js"></script>
+  <script src="js/scheduler.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Service Worker 注册 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function() {});
+    }
+  </script>
+</body>
+</html>
