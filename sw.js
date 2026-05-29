@@ -1,5 +1,5 @@
 // Service Worker — 离线缓存 + 消息推送
-const CACHE_NAME = 'vocab-app-v1';
+const CACHE_NAME = 'vocab-app-v2';
 const ASSETS = [
   'index.html',
   'manifest.json',
